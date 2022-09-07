@@ -1,0 +1,43 @@
+# --------------------------------------------------------------------
+# STEP 1: build executable binary
+# --------------------------------------------------------------------
+FROM golang:1.19 AS builder-step
+# set default container's workdir (create and enter it)
+WORKDIR /app
+# copy everything from localhost's current dir to container's current dir
+COPY . .
+
+# compile GO executable
+# With CGO_ENABLED=0 you got a staticaly-linked binary (see: https://en.wikipedia.org/wiki/Static_build) so it 
+#  will run without any external dependencies (you can buld your dockers from 'scratch' image) Like that:
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o /app/bin/main
+
+# CMD to be run after the container start
+CMD ["./bin/main"]
+
+
+# --------------------------------------------------------------------
+# STEP 2: build a small image
+# --------------------------------------------------------------------
+# Use the scratch image, a Zero Bytes image. Perfect for embedding our go static binary.
+# It'll contain only the compiled application
+FROM scratch
+
+# Copy our static executable from previous build
+# it copies just the built artifact from the previous stage into this new stage. 
+# The Go SDK and any intermediate artifacts are left behind, and not saved in the final image.
+COPY --from=builder-step /app/bin/main /app/bin/main
+
+# set the entrypoint
+ENTRYPOINT ["/app/bin/main"]
+
+# More info:
+# - https://docs.docker.com/develop/develop-images/multistage-build/
+# - https://www.digitalocean.com/community/tutorials/how-to-optimize-docker-images-for-production
+# - https://chemidy.medium.com/create-the-smallest-and-secured-golang-docker-image-based-on-scratch-4752223b7324
+# - https://www.youtube.com/watch?v=qIcSHpx2Z1Q&t=144s
+# - https://github.com/golang/go/issues/29053
+# - https://stackoverflow.com/questions/64531437/why-is-cgo-enabled-1-default
+# - https://www.reddit.com/r/golang/comments/pi97sp/comment/hbo0fq6/?utm_source=share&utm_medium=web2x&context=3
+# - https://en.wikipedia.org/wiki/Static_build
+# - https://www.digitalocean.com/community/tutorials/building-go-applications-for-different-operating-systems-and-architectures
