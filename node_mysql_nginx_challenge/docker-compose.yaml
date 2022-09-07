@@ -1,0 +1,59 @@
+version: '3.9'
+
+services:
+
+  db:
+    image: mysql:8.0.30
+    container_name: db
+    restart: always
+    tty: true
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=pass
+      - MYSQL_DATABASE=nodedb
+    networks:
+      - nodenet
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    networks:
+      - nodenet
+    ports:
+      - 3000:8080
+
+  app:
+    build: 
+      context: node
+    container_name: app
+    image: valiodas/node-app
+    entrypoint: dockerize -wait tcp://db:3306 -timeout 30s docker-entrypoint.sh
+    command: node index.js
+    tty: true
+    volumes:
+      - ./node:/app
+    ports:
+      - 8080:8080
+    networks:
+      - nodenet
+    depends_on:
+      - db
+      
+  nginx:
+    build: 
+      context: nginx
+    image: nginx
+    container_name: nginx
+    ports:
+      - "80:80"
+    networks:
+      - nodenet
+    depends_on:
+      - app
+
+
+networks:
+  nodenet:
+    driver: bridge
