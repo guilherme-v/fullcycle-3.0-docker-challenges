@@ -24,7 +24,7 @@ app.get('/', (_req, res) => {
     conn.query("SELECT * FROM people", function (err, result, _fields) {
         if (err) throw err;
         res.send(`
-            <h1>Full Cycle Rocks!</h1>
+            <h1>Full Cycle Rocks!!</h1>
             <ul>
               ${result.map(p => `<li>${p.name}</li>`).join('')}
             </ul>
